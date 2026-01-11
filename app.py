@@ -564,18 +564,54 @@ DEFAULT_NUM = 0
 DEFAULT_CAT = "no"
 
 def build_input_row(user_inputs: dict) -> pd.DataFrame:
+    """
+    Build a single-row DataFrame with:
+    - exact FEATURE_COLS order
+    - numeric/categorical defaults for missing values
+    - safe dtypes for the preprocessor
+    """
+    if not FEATURE_COLS:
+        return pd.DataFrame()
+
     row = {}
-    if not FEATURE_COLS: return pd.DataFrame()
-    
+
+    # Columns that are truly numeric in training
+    numeric_cols = {
+        "age", "studytime", "failures", "famrel", "freetime", "goout",
+        "Dalc", "Walc", "health", "absences", "traveltime", "Medu",
+        "Fedu"
+    }
+
+    # Yes/No categorical flags
+    yes_no_cols = {
+        "schoolsup", "famsup", "paid", "activities",
+        "nursery", "higher", "internet", "romantic"
+    }
+
     for col in FEATURE_COLS:
         if col in user_inputs:
-            row[col] = user_inputs[col]
+            val = user_inputs[col]
         else:
-            if col in {"schoolsup", "famsup", "paid", "activities", "nursery", "higher", "internet", "romantic"}:
-                row[col] = DEFAULT_CAT
+            # sensible defaults
+            if col in yes_no_cols:
+                val = DEFAULT_CAT
+            elif col in numeric_cols:
+                val = DEFAULT_NUM
             else:
-                row[col] = DEFAULT_NUM
-    return pd.DataFrame([row], columns=FEATURE_COLS)
+                # for other categoricals (school, address, etc.) put a neutral placeholder
+                val = user_inputs.get(col, DEFAULT_CAT)
+
+        row[col] = val
+
+    df = pd.DataFrame([row], columns=FEATURE_COLS)
+
+    # Cast numeric columns explicitly to numeric dtype
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    return df
+
 
 # -----------------------------------------------------------------------------
 # 5. MAIN UI LAYOUT
@@ -666,12 +702,27 @@ if model:
     # --- RESULT SECTION ---
     if submitted:
         x = build_input_row(user)
-        
-        # Spinner with custom message
-        with st.spinner("✨ The Oracle is analyzing your fate..."):
-            x_p = preprocessor.transform(x)
-            x_p = x_p.toarray() if hasattr(x_p, "toarray") else x_p
-            pred = float(model.predict(x_p, verbose=0).flatten()[0])
+    
+        if x.empty:
+            st.error("⚠️ Could not build input row. Please try again.")
+        else:
+            st.write("🔍 Debug – input to model:")
+            st.write("Columns:", list(x.columns))
+            st.write(x.dtypes)
+    
+            with st.spinner("✨ The Oracle is analyzing your fate..."):
+                try:
+                    x_p = preprocessor.transform(x)
+                    x_p = x_p.toarray() if hasattr(x_p, "toarray") else x_p
+                    pred = float(model.predict(x_p, verbose=0).flatten()[0])
+                except Exception as e:
+                    st.error(
+                        "⚠️ Something went wrong while preparing your data for the model. "
+                        "Check that all required inputs are present and valid."
+                    )
+                    st.code(str(e))
+                    st.stop()
+
 
         # Determine result category
         if pred < 10:
@@ -731,3 +782,4 @@ GitHub
 <p class="footer-credit">© 2026 Backbencher's Oracle • Powered by Neural Networks 🧠</p>
 </div>"""
 st.markdown(footer_html, unsafe_allow_html=True)
+
