@@ -2,5 +2,4 @@ streamlit
 pandas
 tensorflow
 joblib
-numpy<1.24
-scikit-learn<1.2.0
+scikit-learn
