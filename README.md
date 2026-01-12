@@ -1,4 +1,4 @@
-# 🎓🧠 Student Performance ANN Predictor 🧠🎓
+# 🎓🧠 Student Performance ANN Predictor 🎓🧠
 
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&duration=3000&pause=1000&color=2E97F7&center=true&vCenter=true&width=1000&lines=Deep+Learning+Grade+Prediction;UCI+Student+Performance+Dataset;TensorFlow+%2B+Keras+ANN+Architecture;Robust+Sklearn+Preprocessing+Pipeline;Interactive+Streamlit+Web+App)](https://git.io/typing-svg)
 
